@@ -62,8 +62,8 @@ function check_pods () {
     local pod_data=$($kubectl get pods "$item" -o json)
     log INFO    "[Pods]: ${COLOR_YELLOW}$item${COLOR_OFF}"
     log INFO    "  phase: ${COLOR_GREEN}$(echo $pod_data | jq -r .status.phase)${COLOR_OFF}"
-    log INFO   "  conditions: \n$(echo $pod_data | jq -r '.status.conditions[] | select(.status != "True") | "    status=\(.status), type=\(.type), message=\(.message)"')"
-    log DEBUG   "  containerStatuses: \n $(echo $pod_data | jq -r .status.containerStatuses)"
+    log INFO   "  conditions:\n$(echo $pod_data | jq -r '.status.conditions[] | select(.status != "True") | "    status=\(.status), type=\(.type), message=\(.message)"')"
+    log DEBUG   "  containerStatuses:\n $(echo $pod_data | jq -r .status.containerStatuses)"
   done
 }
 
@@ -156,14 +156,14 @@ kubectl="kubectl --namespace $namespace"
 
 check
 
-for (( i=0; i<check_num; i++ ))
+for (( i=1; i<=check_num; i++ ))
 do
    log INFO "[Number of inspections] ${COLOR_BLUE}$i${COLOR_OFF}"
    check_deploy $deploy_name
    if [ $check_result == true ]; then
      break
    else
-     log INFO "[Reuslt] ${COLOR_RED}Deployment is not ready${COLOR_OFF}"
+     log INFO "[Reuslt] ${COLOR_RED}Deployment is not ready.${COLOR_OFF}"
      log INFO "[Sleep] ${check_interval}s"
      sleep $check_interval
      log INFO
