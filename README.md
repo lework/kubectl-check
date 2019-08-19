@@ -5,7 +5,7 @@
 [![](https://images.microbadger.com/badges/image/lework/kubectl-check.svg)](http://microbadger.com/images/lework/kubectl-check "Get your own image badge on microbadger.com")
 [![](https://images.microbadger.com/badges/version/lework/kubectl-check.svg)](http://microbadger.com/images/lework/kubectl-check "Get your own version badge on microbadger.com")
 
-用于检查deployment的更新状态的kubectl插件
+用于检查deployment的所有pod是否**就绪**的kubectl插件
 
 
 
