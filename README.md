@@ -1,4 +1,4 @@
-##　kubectl-check
+## kubectl-check
 
 ![docker hub](https://img.shields.io/docker/pulls/lework/kubectl-check.svg?style=flat-square)
 ![docker hub](https://img.shields.io/docker/stars/lework/kubectl-check.svg?style=flat-square)
@@ -9,7 +9,7 @@
 
 
 
-##　插件使用
+## 插件使用
 
 **安装插件**
 
@@ -26,7 +26,7 @@ kubectl check -h
 
 **检查deployment状态**
 
-检查deployment的状态，pod`启动成功`并`就绪后`则退出,状态码返回0; 超过默认的检测次数(60)后还未成功则超时退出，返回状态码1
+> 呈轮询式检查deployment的状态，如果检查到deployment的所有pod`启动成功`并`就绪后`后检查脚本则退出,状态码返回0; 如果检查超过默认次数(60)后还未成功则超时退出，返回状态码1.
 
 ```bash
 kubectl check -d deploy-name # 指定deploy名称
