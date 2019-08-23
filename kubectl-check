@@ -4,7 +4,7 @@
 #
 #Author         : lework
 #Description    : Check if all pods in Kubernetes deployment are ready.
-#Update Date    : 2019-08-16 19:00
+#Update Date    : 2019-08-23 10:00
 #
 ######################################################################################################
 
@@ -53,14 +53,14 @@ log() {
 }
 
 function check() {
-  ${kubectl} get pods,deploy >/dev/null 2>1 || (log INFO "${COLOR_RED}Please check the configuration of kubectl.${COLOR_OFF}";exit 1)
-  jq -h >/dev/null 2>1 || (log INFO "${COLOR_RED}Please check the configuration of jq.${COLOR_OFF}";exit 1)
+  ${kubectl} get pods,deploy >/dev/null 2>1 || (log INFO "[Error] ${COLOR_RED}Please check the configuration of kubectl.${COLOR_OFF}";exit 1)
+  jq -h >/dev/null 2>1 || (log INFO "[Error] ${COLOR_RED}Please check the configuration of jq.${COLOR_OFF}";exit 1)
 }
 
 function check_parameter {
     for p in "${@}"; do 
       if [ -z ${!p-} ]; then
-        log INFO "[Reuslt] ${COLOR_RED}Not set ${p}.${COLOR_OFF}"
+        log INFO "[Error] ${COLOR_RED}Not set ${p}.${COLOR_OFF}"
         exit 1
       fi
     done
@@ -70,10 +70,14 @@ function check_pods () {
   local pod_name=$*
   for item in ${pod_name}; do 
     local pod_data=$($kubectl get pods "$item" -o json)
-    log INFO    "[Pods]: ${COLOR_YELLOW}$item${COLOR_OFF}"
-    log INFO    "  phase: ${COLOR_GREEN}$(echo $pod_data | jq -r .status.phase)${COLOR_OFF}"
-    log INFO   "  conditions:\n$(echo $pod_data | jq -r '.status.conditions[] | select(.status != "True") | "    status=\(.status), type=\(.type), message=\(.message)"')"
-    log DEBUG   "  containerStatuses:\n $(echo $pod_data | jq -r .status.containerStatuses)"
+    log INFO  "[Pods] ${COLOR_YELLOW}$item${COLOR_OFF}"
+    log INFO  "  phase: ${COLOR_GREEN}$(echo $pod_data | jq -r .status.phase)${COLOR_OFF}"
+    log INFO  "  conditions:\n$(echo $pod_data | jq -r '.status.conditions[] | select(.status != "True") | "    status=\(.status), type=\(.type), reason=\(.reason), message=\(.message)"')"
+    log INFO  "  hostIP: $(echo $pod_data | jq -r .status.hostIP)"
+    log DEBUG "  podIP: $(echo $pod_data | jq -r .status.podIP)"
+    log DEBUG "  qosClass: $(echo $pod_data | jq -r .status.qosClass)"
+    log DEBUG "  startTime: $(echo $pod_data | jq -r .status.startTime)"
+    log DEBUG "  containerStatuses:\n$(echo $pod_data | jq -r .status.containerStatuses | sed 's/^/    /')"
   done
 }
 
@@ -87,30 +91,28 @@ function check_deploy () {
   fi
   local deploy_sel=$($kubectl get --raw "$(echo $deploy_data | jq -r .metadata.selfLink)/scale" | jq -r .status.targetSelector)
   local deploy_availableReplicas=$(echo $deploy_data | jq -r .status.availableReplicas)
-  local deploy_conditions=$(echo $deploy_data | jq -r '.status.conditions[] | "    status=\(.status), type=\(.type), message=\(.message)"')
-  local deploy_status=$(echo $deploy_data | jq -r .status.conditions[].status)
-  local deploy_message=$(echo $deploy_data | jq -r .status.conditions[].message)
-  local deploy_lastUpdateTime=$(echo $deploy_data | jq -r .status.conditions[].lastUpdateTime)  #message
+  local deploy_conditions=$(echo $deploy_data | jq -r '.status.conditions[] | "    status=\(.status), type=\(.type), reason=\(.reason), message=\(.message)"')
   local deploy_replicas=$(echo $deploy_data | jq -r .status.replicas)   # deploy 副本数
   local deploy_unavailableReplicas=$(echo $deploy_data | jq -r .status.unavailableReplicas)    # deploy 不可用副本数
   local deploy_updatedReplicas=$(echo $deploy_data | jq -r .status.updatedReplicas)     # deploy更新副本数 
+  local deploy_observedGeneration=$(echo $deploy_data | jq -r .status.observedGeneration)     # deploy版本号
 
-  log INFO    "[Deployment] ${COLOR_YELLOW}$deploy_name${COLOR_OFF}"
-  log DEBUG   "  conditions:\n$deploy_conditions"
-  log INFO    "  status: ${COLOR_GREEN}$deploy_status${COLOR_OFF}"
-  log INFO    "  message: $deploy_message"
-  log DEBUG   "  lastUpdateTime: $deploy_lastUpdateTime"
-  log DEBUG   "  replicas: ${deploy_replicas-}"
-  log DEBUG   "  availableReplicas: ${deploy_availableReplicas-}"
-  log INFO    "  unavailableReplicas: ${deploy_unavailableReplicas-}"
-  log DEBUG   "  updatedReplicas: ${deploy_updatedReplicas-}"
+  log INFO  "[Deployment] ${COLOR_YELLOW}$deploy_name${COLOR_OFF}"
+  log DEBUG "  namespace: ${namespace-}"
+  log DEBUG "  selector: ${deploy_sel-}"
+  log INFO  "  conditions:\n$deploy_conditions"
+  log DEBUG "  replicas: ${deploy_replicas-}"
+  log DEBUG "  availableReplicas: ${deploy_availableReplicas-}"
+  log INFO  "  unavailableReplicas: ${deploy_unavailableReplicas-}"
+  log DEBUG "  updatedReplicas: ${deploy_updatedReplicas-}"
+  log DEBUG "  observedGeneration: ${deploy_observedGeneration-}"
 
   if [[ "${deploy_unavailableReplicas-}" != "null" &&  ${deploy_unavailableReplicas-} -gt 0 ]]; then
     deploy_pod_name=$($kubectl get pods --selector=$deploy_sel -o json | jq -r '.items[] | select( ([ .status.conditions[] | select(.status == "False" ) ] | length ) != 0) | .metadata.name')
     check_pods $deploy_pod_name
     check_result=false
   else
-    log INFO "[Deploy] pod success."
+    log INFO  "[Deploy] Pod success."
     check_result=true
   fi
 }
@@ -182,6 +184,7 @@ check_parameter deploy_name
 for (( i=1; i<=check_num; i++ ))
 do
    log INFO "[Number of inspections] ${COLOR_BLUE}$i${COLOR_OFF}"
+   log INFO "[Time] ${COLOR_BLUE}$(date +'%Y-%m-%d %H:%M:%S')${COLOR_OFF}"
    check_deploy $deploy_name
    if [ $check_result == true ]; then
      break
@@ -194,7 +197,7 @@ do
 done
 
 if [ $check_result == true ]; then
-  log INFO "[Reuslt] ${COLOR_GREEN}This success.${COLOR_OFF}"
+  log INFO "[Reuslt] ${COLOR_GREEN}Deploy success.${COLOR_OFF}"
   exit 0
 else
   log INFO "[Reuslt] ${COLOR_RED}Check timeout, this time failed.${COLOR_OFF}"
