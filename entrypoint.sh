@@ -2,7 +2,7 @@
 
 set -e
 
-[[ -z ${KUBERNETES_USER} ]] && KUBERNETES_USER="default"
+[ -z ${KUBERNETES_USER} ] && KUBERNETES_USER="default"
 
 
 if [ ! -z ${KUBERNETES_KUBECONFIG} ]; then
@@ -24,5 +24,7 @@ if [[ ! -z ${KUBERNETES_TOKEN} && ! -z ${KUBERNETES_SERVER} ]]; then
   kubectl config use-context default
 fi
 
+[ -f deployment.yml ] && kubectl apply -f deployment.yml --record=true
+[ ! -z ${KUBERNETES_DEPLOY} ] && kubectl check -d ${KUBERNETES_DEPLOY}
 
 exec "$@"

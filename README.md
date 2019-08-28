@@ -42,6 +42,7 @@ kubectl check -d deploy-name -v # 打印详细信息
 ```bash
 KUBERNETES_KUBECONFIG=$(base64 -w 0 ~/.kube/config)
 docker run --rm -e KUBERNETES_KUBECONFIG=$KUBERNETES_KUBECONFIG lework/kubectl-check:latest kubectl check -d deploy-name
+docker run --rm -e KUBERNETES_KUBECONFIG=$KUBERNETES_KUBECONFIG -e KUBERNETES_DEPLOY=deploy-name lework/kubectl-check:latest
 ```
 
 **使用kube token**
