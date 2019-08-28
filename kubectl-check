@@ -185,13 +185,13 @@ for (( i=1; i<=check_num; i++ ))
 do
    log INFO "[Number of inspections] ${COLOR_BLUE}$i${COLOR_OFF}"
    log INFO "[Time] ${COLOR_BLUE}$(date +'%Y-%m-%d %H:%M:%S')${COLOR_OFF}"
+   [ $i -eq $check_num ] && script_logging_level=DEBUG
    check_deploy $deploy_name
    if [ $check_result == true ]; then
      break
    else
      log INFO "[Reuslt] ${COLOR_RED}Deployment is not ready.${COLOR_OFF}"
-     log INFO "[Sleep] ${check_interval}s"
-     sleep $check_interval
+     [ $i -ne $check_num ] && (log INFO "[Sleep] ${check_interval}s";sleep $check_interval)
      log INFO
    fi
 done

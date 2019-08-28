@@ -3,8 +3,7 @@ LABEL maintainer "Lework <lework@yeah.net>"
 
 ENV TIMEZONE=Asia/Shanghai
 
-COPY kubectl-check /usr/local/bin/kubectl-check
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY kubectl-check entrypoint.sh /usr/local/bin/
 
 RUN apk --no-cache add tzdata bash jq \
     && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
@@ -12,5 +11,3 @@ RUN apk --no-cache add tzdata bash jq \
     && chmod +x /usr/local/bin/*
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-
-CMD ["kubectl", "help"]
