@@ -208,6 +208,7 @@ if [[ ${deploy_version:-} -gt 1 && ${script_logging_level} == "DEBUG" ]]; then
     diff -u <($kubectl rollout history deploy/${deploy_name:-} --revision=$(($deploy_version-1))) \
       <($kubectl rollout history deploy/${deploy_name:-} --revision=${deploy_version:-})
   else
+    export TERM=xterm-256color
     diff -u <($kubectl rollout history deploy/${deploy_name:-} --revision=$(($deploy_version-1))) \
       <($kubectl rollout history deploy/${deploy_name:-} --revision=${deploy_version:-}) \
       |  sed "s/^-/$(tput setaf 1)&/; s/^+/$(tput setaf 2)&/; s/^@/$(tput setaf 6)&/; s/$/$(tput sgr0)/"

@@ -14,7 +14,6 @@
 **所需权限**
 
 ```bash
-server=https://192.168.77.133:6443   #　需改成k8s对应节点的ip
 # 创建rabc权限
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
