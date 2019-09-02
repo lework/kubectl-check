@@ -25,6 +25,6 @@ if [[ ! -z ${KUBERNETES_TOKEN} && ! -z ${KUBERNETES_SERVER} ]]; then
 fi
 
 [ -f deployment.yml ] && kubectl apply -f deployment.yml --record=true
-[ ! -z ${KUBERNETES_DEPLOY} ] && kubectl check -d ${KUBERNETES_DEPLOY}
+[ ! -z ${KUBERNETES_DEPLOY} ] && exec kubectl check -d ${KUBERNETES_DEPLOY}
 
 exec "$@"

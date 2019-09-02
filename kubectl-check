@@ -13,6 +13,8 @@ set -o errtrace         # Make sure any error trap is inherited
 set -o nounset          # Disallow expansion of unset variables
 set -o pipefail         # Use last non-zero exit code in a pipeline
 
+trap 'echo "kubectl-check trapped."; exit 1' 1 2 3 15
+
 
 ######################################################################################################
 # environment configuration
