@@ -5,7 +5,7 @@ ENV TIMEZONE=Asia/Shanghai
 
 COPY kubectl-check entrypoint.sh /usr/local/bin/
 
-RUN apk --no-cache add tzdata bash jq \
+RUN apk --no-cache add tzdata bash jq ncurses \
     && ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
     && echo "${TIMEZONE}" > /etc/timezone \
     && chmod +x /usr/local/bin/*

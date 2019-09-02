@@ -18,12 +18,12 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 # environment configuration
 ######################################################################################################
 
-namespace="default"       # 命名空间
-deploy_name=""            # deploy名称
-deploy_version=""         # deploy版本
-check_interval=2          # 检查间隔
-check_num=60              # 检查次数
-check_result=false        # 检查结果
+namespace="default"       # kubenetes namespace
+deploy_name=""            # deploy name
+deploy_version=""         # deploy version
+check_interval=2          # check interval
+check_total=60            # check total
+check_result=false        # check result
 
 [[ ${COLOR_RED-} ]]    || COLOR_RED="\e[1;31m"
 [[ ${COLOR_YELLOW-} ]] || COLOR_YELLOW="\e[1;33m"
@@ -156,7 +156,7 @@ while [ "${1-}" != "" ]; do
                                     check_interval=${1-}
                                     ;;
         -t | --total )              shift
-                                    check_num=${1-}
+                                    check_total=${1-}
                                     ;;
         -v | --verbose )            script_logging_level=DEBUG
                                     ;;
@@ -184,17 +184,17 @@ fi
 check
 check_parameter deploy_name
 
-for (( i=1; i<=check_num; i++ ))
+for (( i=1; i<=check_total; i++ ))
 do
    log INFO "[Number of inspections] ${COLOR_BLUE}$i${COLOR_OFF}"
    log INFO "[Time] ${COLOR_BLUE}$(date +'%Y-%m-%d %H:%M:%S')${COLOR_OFF}"
-   [ $i -eq $check_num ] && script_logging_level=DEBUG
+   [ $i -eq $check_total ] && script_logging_level=DEBUG
    check_deploy $deploy_name
    if [ $check_result == true ]; then
      break
    else
      log INFO "[Reuslt] ${COLOR_RED}Deployment is not ready.${COLOR_OFF}"
-     [ $i -ne $check_num ] && (log INFO "[Sleep] ${check_interval}s";sleep $check_interval)
+     [ $i -ne $check_total ] && (log INFO "[Sleep] ${check_interval}s";sleep $check_interval)
      log INFO
    fi
 done
@@ -208,7 +208,7 @@ if [[ ${deploy_version:-} -gt 1 && ${script_logging_level} == "DEBUG" ]]; then
   else
     diff -u <($kubectl rollout history deploy/${deploy_name:-} --revision=$(($deploy_version-1))) \
       <($kubectl rollout history deploy/${deploy_name:-} --revision=${deploy_version:-}) \
-      | sed 's/^-/\x1b[1;31m-/;s/^+/\x1b[1;32m+/;s/^@/\x1b[1;34m@/;s/$/\x1b[0m/'
+      |  sed "s/^-/$(tput setaf 1)&/; s/^+/$(tput setaf 2)&/; s/^@/$(tput setaf 6)&/; s/$/$(tput sgr0)/"
   fi
 fi
 

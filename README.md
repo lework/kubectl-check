@@ -11,6 +11,45 @@
 
 ## 插件使用
 
+**所需权限**
+
+```bash
+server=https://192.168.77.133:6443   #　需改成k8s对应节点的ip
+# 创建rabc权限
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-deploy
+  namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: ci-deploy
+  namespace: default
+rules:
+  - apiGroups: ["apps", "extensions", ""]
+    resources: ["pods", "deployments", "deployments/scale", "services", "replicasets"]
+    verbs: ["create","get","list","patch","update"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: ci-deploy
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: ci-deploy
+roleRef:
+  kind: Role
+  name: ci-deploy
+  apiGroup: rbac.authorization.k8s.io
+EOF
+```
+
 **安装插件**
 
 ```bash
@@ -22,6 +61,18 @@ chmod +x /usr/local/bin/kubectl-check
 
 ```bash
 kubectl check -h
+Check if all pods in Kubernetes deployment are ready.
+
+Usage: /usr/local/bin/kubectl-check [options]
+
+Options:
+  -n,--namespace     Specify namespace, default is default
+  -d,--deploy        Depoyment name
+  -i,--interval      Check the deployment status interval
+  -t,--total         Total number of inspections
+  -v,--verbose       Verbose info
+  --nocolor          Do not output color
+  -h,--help          View help
 ```
 
 **检查deployment状态**
@@ -40,20 +91,26 @@ kubectl check -d deploy-name -v # 打印详细信息
 **使用kubeconfig**
 
 ```bash
+# 设定kubeconfig
 KUBERNETES_KUBECONFIG=$(base64 -w 0 ~/.kube/config)
+
+# 执行cmd命令
 docker run --rm -e KUBERNETES_KUBECONFIG=$KUBERNETES_KUBECONFIG lework/kubectl-check:latest kubectl check -d deploy-name
+
+# 以变量的形式指定deploy name
 docker run --rm -e KUBERNETES_KUBECONFIG=$KUBERNETES_KUBECONFIG -e KUBERNETES_DEPLOY=deploy-name lework/kubectl-check:latest
 ```
 
 **使用kube token**
 
 ```bash
-kubectl create serviceaccount def-ns-admin -n default
-kubectl create rolebinding def-ns-admin --clusterrole=admin --serviceaccount=default:def-ns-admin
-
 KUBERNETES_SERVER="https://192.168.77.130:6443"
-KUBERNETES_TOKEN=$(kubectl get secret $(kubectl get sa def-ns-admin -o jsonpath={.secrets[].name}) -o jsonpath={.data.token})
-KUBERNETES_CERT=$(kubectl get secret $(kubectl get sa def-ns-admin -o jsonpath={.secrets[].name}) -o "jsonpath={.data.ca\.crt}")
+KUBERNETES_TOKEN=$(kubectl get secret $(kubectl get sa ci-deploy -o jsonpath={.secrets[].name}) -o jsonpath={.data.token})
+KUBERNETES_CERT=$(kubectl get secret $(kubectl get sa ci-deploy -o jsonpath={.secrets[].name}) -o "jsonpath={.data.ca\.crt}")
 
+# 执行cmd命令
 docker run --rm -e KUBERNETES_SERVER=$KUBERNETES_SERVER -e KUBERNETES_TOKEN=$KUBERNETES_TOKEN -e KUBERNETES_CERT=$KUBERNETES_CERT lework/kubectl-check:latest kubectl check -d deploy-name
+
+# 以变量的形式指定deploy name
+docker run --rm -e KUBERNETES_SERVER=$KUBERNETES_SERVER -e KUBERNETES_TOKEN=$KUBERNETES_TOKEN -e KUBERNETES_CERT=$KUBERNETES_CERT -e KUBERNETES_DEPLOY=deploy-name lework/kubectl-check:latest
 ```
