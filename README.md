@@ -65,6 +65,7 @@ Check if all pods in Kubernetes deployment are ready.
 Usage: /usr/local/bin/kubectl-check [options]
 
 Options:
+  -c,--kubeconfig    Specify kubeconfig, default is /root/.kube/config"
   -n,--namespace     Specify namespace, default is default
   -d,--deploy        Depoyment name
   -i,--interval      Check the deployment status interval
@@ -80,6 +81,7 @@ Options:
 
 ```bash
 kubectl check -d deploy-name # 指定deploy名称
+kubectl check -d deploy-name -c /root/.kube/config-test # 指定 kubeconfig 文件
 kubectl check -n default -d deploy-name -v # 指定命名空间
 kubectl check -d deploy-name -i 5 -t 10 # 指定检查等待时间时间(单位秒)和检查次数
 kubectl check -d deploy-name -v # 打印详细信息

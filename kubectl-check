@@ -128,6 +128,7 @@ function usage {
     echo "Usage: $0 [options]"
     echo 
     echo "Options:"
+    echo "  -c,--kubeconfig    Specify kubeconfig, default is ${HOME}/.kube/config"
     echo "  -n,--namespace     Specify namespace, default is default"
     echo "  -d,--deploy        Depoyment name"
     echo "  -i,--interval      Check the deployment status interval"
