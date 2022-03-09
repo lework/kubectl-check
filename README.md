@@ -49,6 +49,12 @@ roleRef:
 EOF
 ```
 
+**安装依赖**
+```bash
+wget -O /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+chmod +x /usr/local/bin/jq
+```
+
 **安装插件**
 
 ```bash
