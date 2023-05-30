@@ -94,7 +94,7 @@ function check_deploy () {
     log INFO   "[Error] ${COLOR_RED}Get resource fail.${COLOR_OFF}"
     exit 1
   fi
-  local deploy_sel=$($kubectl get --raw "/apis/apps/v1/namespaces/$namespace/deployments/$deploy_name/scale" | jq -r .status.targetSelector)
+  local deploy_sel=$($kubectl get deploy $deploy_name -n airmart-sit -o json | jq -r .spec.selector.matchLabels.app)
   local deploy_availableReplicas=$(echo $deploy_data | jq -r .status.availableReplicas)
   local deploy_conditions=$(echo $deploy_data | jq -r '.status.conditions[] | "    status=\(.status), type=\(.type), reason=\(.reason), message=\(.message)"')
   local deploy_replicas=$(echo $deploy_data | jq -r .status.replicas)   # deploy 副本数
@@ -113,7 +113,7 @@ function check_deploy () {
   log DEBUG "  observedGeneration: ${deploy_version-}"
 
   if [[ "${deploy_unavailableReplicas-}" != "null" &&  ${deploy_unavailableReplicas-} -gt 0 ]]; then
-    deploy_pod_name=$($kubectl get pods --selector=$deploy_sel -o json | jq -r '.items[] | select( ([ .status.conditions[] | select(.status == "False" ) ] | length ) != 0) | .metadata.name')
+    deploy_pod_name=$($kubectl get pods -l app=$deploy_sel -o json | jq -r '.items[] | select( ([ .status.conditions[] | select(.status == "False" ) ] | length ) != 0) | .metadata.name')
     check_pods $deploy_pod_name
     check_result=false
   else
@@ -177,7 +177,7 @@ while [ "${1-}" != "" ]; do
 done
 
 
-kubectl="kubectl --kubeconfig $kubeconfig --namespace $namespace"
+kubectl="kubectl --kubeconfig $kubeconfig -n $namespace"
 
 if [ "${nocolor-}" == "true" ]; then
   COLOR_RED=""
