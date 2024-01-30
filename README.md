@@ -71,11 +71,13 @@ Check if all pods in Kubernetes deployment are ready.
 Usage: /usr/local/bin/kubectl-check [options]
 
 Options:
-  -c,--kubeconfig    Specify kubeconfig, default is /root/.kube/config"
+  -c,--kubeconfig    Specify kubeconfig, default is /root/.kube/config
   -n,--namespace     Specify namespace, default is default
-  -d,--deploy        Depoyment name
+  -d,--deployment    Depoyment name
+  -s,--statefulset   StatefulSet name
   -i,--interval      Check the deployment status interval
   -t,--total         Total number of inspections
+  -sn,--success      Total number of success
   -v,--verbose       Verbose info
   --nocolor          Do not output color
   -h,--help          View help
