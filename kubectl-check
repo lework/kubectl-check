@@ -20,7 +20,7 @@ export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin
 ######################################################################################################
 # environment configuration
 ######################################################################################################
-kubeconfig="${HOME}/.kube/config" # kubenetes config
+kubeconfig="${HOME:-'~'}/.kube/config" # kubenetes config
 namespace="default"       # kubenetes namespace
 deploy_name=""            # deploy name
 resource_version=""         # deploy version
@@ -64,7 +64,7 @@ log() {
 }
 
 function check() {
-  ${kubectl} get pods,deployment,statefulset >/dev/null || (log INFO "[Error] ${COLOR_RED}Please check the configuration of kubectl.${COLOR_OFF}";exit 1)
+  ${kubectl} get pods,deployment,statefulset,daemonset >/dev/null || (log INFO "[Error] ${COLOR_RED}Please check the configuration of kubectl.${COLOR_OFF}";exit 1)
   jq -h >/dev/null || (log INFO "[Error] ${COLOR_RED}Please check the configuration of jq.${COLOR_OFF}";exit 1)
 }
 
@@ -170,16 +170,55 @@ function check_statefulset () {
   fi
 }
 
+function check_daemonset () {
+  local daemonset_name=$*
+  local daemonset_data
+  daemonset_data=$($kubectl get daemonset $daemonset_name -o json)
+  if [ "$?" -ne "0" ]; then
+    log INFO   "[Error] ${COLOR_RED}Get resource fail.${COLOR_OFF}"
+    exit 1
+  fi
+  local daemonset_sel=$(echo $daemonset_data | jq -r '.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(",")')
+  local daemonset_desiredNumberScheduled=$(echo $daemonset_data | jq -r .status.desiredNumberScheduled)    # daemonset 期望调度数
+  local daemonset_currentNumberScheduled=$(echo $daemonset_data | jq -r .status.currentNumberScheduled)    # daemonset 当前调度数
+  local daemonset_numberReady=$(echo $daemonset_data | jq -r .status.numberReady)                         # daemonset 就绪数
+  local daemonset_numberAvailable=$(echo $daemonset_data | jq -r .status.numberAvailable)                 # daemonset 可用数
+  local daemonset_numberUnavailable=$(echo $daemonset_data | jq -r .status.numberUnavailable)             # daemonset 不可用数
+  local daemonset_updatedNumberScheduled=$(echo $daemonset_data | jq -r .status.updatedNumberScheduled)    # daemonset 更新调度数
+  resource_version=$(echo $daemonset_data | jq -r .status.observedGeneration)                             # daemonset 版本号
+
+  log INFO  "[DaemonSet] ${COLOR_YELLOW}${daemonset_name}${COLOR_OFF}"
+  log DEBUG "  namespace: ${namespace-}"
+  log DEBUG "  selector: ${daemonset_sel-}"
+  log INFO  "  desiredNumberScheduled: ${daemonset_desiredNumberScheduled-}"
+  log INFO  "  currentNumberScheduled: ${daemonset_currentNumberScheduled-}"
+  log INFO  "  numberReady: ${daemonset_numberReady-}"
+  log INFO  "  numberAvailable: ${daemonset_numberAvailable-}"
+  log INFO  "  numberUnavailable: ${daemonset_numberUnavailable-}"
+  log INFO  "  updatedNumberScheduled: ${daemonset_updatedNumberScheduled-}"
+  log DEBUG "  observedGeneration: ${resource_version-}"
+
+  if [[ "${daemonset_numberUnavailable-}" != "null" && ${daemonset_numberUnavailable-} -gt 0 || "${daemonset_desiredNumberScheduled:-0}" != "${daemonset_numberReady:-0}" ]]; then
+    daemonset_pod_name=$($kubectl get pods --selector=$daemonset_sel -o json | jq -r '.items[]? | select( ([ .status.conditions[]? | select(.status == "False" ) ] | length ) != 0) | .metadata.name')
+    check_pods $daemonset_pod_name
+    check_result=false
+  else
+    log INFO "[DaemonSet] ${COLOR_GREEN}Pod success.${COLOR_OFF}"
+    check_result=true
+  fi
+}
+
 function usage {
     echo "Check if all pods in Kubernetes deployment are ready."
     echo
     echo "Usage: $0 [options]"
     echo 
     echo "Options:"
-    echo "  -c,--kubeconfig    Specify kubeconfig, default is ${HOME}/.kube/config"
+    echo "  -c,--kubeconfig    Specify kubeconfig, default is ${HOME:-'~'}/.kube/config"
     echo "  -n,--namespace     Specify namespace, default is default"
     echo "  -d,--deployment    Depoyment name"
     echo "  -s,--statefulset   StatefulSet name"
+    echo "  -ds,--daemonset    DaemonSet name"
     echo "  -i,--interval      Check the deployment status interval"
     echo "  -t,--total         Total number of inspections"
     echo "  -sn,--success      Total number of success"
@@ -213,6 +252,10 @@ while [ "${1-}" != "" ]; do
         -s | --statefulset )        shift
                                     resource_name=${1-}
                                     resource_type="statefulset"
+                                    ;;
+        -ds | --daemonset )         shift
+                                    resource_name=${1-}
+                                    resource_type="daemonset"
                                     ;;
         -i | --interval )           shift
                                     check_interval=${1-}

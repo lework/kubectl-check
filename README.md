@@ -2,12 +2,10 @@
 
 ![docker hub](https://img.shields.io/docker/pulls/lework/kubectl-check.svg?style=flat-square)
 ![docker hub](https://img.shields.io/docker/stars/lework/kubectl-check.svg?style=flat-square)
-[![](https://images.microbadger.com/badges/image/lework/kubectl-check.svg)](http://microbadger.com/images/lework/kubectl-check "Get your own image badge on microbadger.com")
-[![](https://images.microbadger.com/badges/version/lework/kubectl-check.svg)](http://microbadger.com/images/lework/kubectl-check "Get your own version badge on microbadger.com")
+[![](https://images.microbadger.com/badges/image/lework/kubectl-check.svg)](http://microbadger.com/images/lework/kubectl-check 'Get your own image badge on microbadger.com')
+[![](https://images.microbadger.com/badges/version/lework/kubectl-check.svg)](http://microbadger.com/images/lework/kubectl-check 'Get your own version badge on microbadger.com')
 
-用于检查deployment的所有pod是否**就绪**的kubectl插件
-
-
+用于检查 Kubernetes 资源（deployment、statefulset、daemonset）的所有 pod 是否**就绪**的 kubectl 插件
 
 ## 插件使用
 
@@ -30,7 +28,7 @@ metadata:
   namespace: default
 rules:
   - apiGroups: ["apps", "extensions", ""]
-    resources: ["pods", "deployments", "deployments/scale", "services", "replicasets"]
+    resources: ["pods", "deployments", "deployments/scale", "services", "replicasets", "statefulsets", "statefulsets/scale", "daemonsets"]
     verbs: ["create","get","list","patch","update"]
 
 ---
@@ -50,6 +48,7 @@ EOF
 ```
 
 **安装依赖**
+
 ```bash
 wget -O /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
 chmod +x /usr/local/bin/jq
@@ -75,6 +74,7 @@ Options:
   -n,--namespace     Specify namespace, default is default
   -d,--deployment    Depoyment name
   -s,--statefulset   StatefulSet name
+  -ds,--daemonset    DaemonSet name
   -i,--interval      Check the deployment status interval
   -t,--total         Total number of inspections
   -sn,--success      Total number of success
@@ -83,9 +83,9 @@ Options:
   -h,--help          View help
 ```
 
-**检查deployment状态**
+**检查 deployment 状态**
 
-> 呈轮询式检查deployment的状态，如果检查到deployment的所有pod`启动成功`并`就绪后`后检查脚本则退出,状态码返回0; 如果检查超过默认次数(60)后还未成功则超时退出，返回状态码1.
+> 呈轮询式检查 deployment 的状态，如果检查到 deployment 的所有 pod`启动成功`并`就绪后`后检查脚本则退出,状态码返回 0; 如果检查超过默认次数(60)后还未成功则超时退出，返回状态码 1.
 
 ```bash
 kubectl check -d deploy-name # 指定deploy名称
@@ -95,9 +95,33 @@ kubectl check -d deploy-name -i 5 -t 10 # 指定检查等待时间时间(单位�
 kubectl check -d deploy-name -v # 打印详细信息
 ```
 
-## Docker使用
+**检查 statefulset 状态**
 
-**使用kubeconfig**
+> 呈轮询式检查 statefulset 的状态，如果检查到 statefulset 的所有 pod`启动成功`并`就绪后`后检查脚本则退出,状态码返回 0; 如果检查超过默认次数(60)后还未成功则超时退出，返回状态码 1.
+
+```bash
+kubectl check -s statefulset-name # 指定statefulset名称
+kubectl check -s statefulset-name -c /root/.kube/config-test # 指定 kubeconfig 文件
+kubectl check -n default -s statefulset-name -v # 指定命名空间
+kubectl check -s statefulset-name -i 5 -t 10 # 指定检查等待时间时间(单位秒)和检查次数
+kubectl check -s statefulset-name -v # 打印详细信息
+```
+
+**检查 daemonset 状态**
+
+> 呈轮询式检查 daemonset 的状态，如果检查到 daemonset 的所有 pod`启动成功`并`就绪后`后检查脚本则退出,状态码返回 0; 如果检查超过默认次数(60)后还未成功则超时退出，返回状态码 1.
+
+```bash
+kubectl check -ds daemonset-name # 指定daemonset名称
+kubectl check -ds daemonset-name -c /root/.kube/config-test # 指定 kubeconfig 文件
+kubectl check -n default -ds daemonset-name -v # 指定命名空间
+kubectl check -ds daemonset-name -i 5 -t 10 # 指定检查等待时间时间(单位秒)和检查次数
+kubectl check -ds daemonset-name -v # 打印详细信息
+```
+
+## Docker 使用
+
+**使用 kubeconfig**
 
 ```bash
 # 设定kubeconfig
@@ -110,7 +134,7 @@ docker run --rm -e KUBERNETES_KUBECONFIG=$KUBERNETES_KUBECONFIG lework/kubectl-c
 docker run --rm -e KUBERNETES_KUBECONFIG=$KUBERNETES_KUBECONFIG -e KUBERNETES_DEPLOY=deploy-name lework/kubectl-check:latest
 ```
 
-**使用kube token**
+**使用 kube token**
 
 ```bash
 KUBERNETES_SERVER="https://192.168.77.130:6443"
